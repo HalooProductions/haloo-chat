@@ -31,9 +31,23 @@ func (hdb *HalooDB) connect() {
 		log.Fatal(err)
 	}
 
-	// Insert test user into the users table.
-	if _, err := hdb.connection.Exec(
-		"INSERT INTO users (name, email, password, last_seen, profile_picture) VALUES ('Riku', 'rikuw')"); err != nil {
+	if hdb.rowCount("users") == 0 {
+		// Insert test user into the users table.
+		if _, err := hdb.connection.Exec(
+			"INSERT INTO users (name, email, password, last_seen, profile_picture) VALUES ('Riku', 'rikuw', 'salasana', '2016-01-25 10:10:10.555555-05:00', 'test.jpg')"); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func (hdb *HalooDB) rowCount(table string) int {
+	var count int
+
+	row := hdb.connection.QueryRow("SELECT COUNT(*) FROM " + table)
+	err := row.Scan(&count)
+	if err != nil {
 		log.Fatal(err)
 	}
+
+	return count
 }
