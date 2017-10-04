@@ -2,7 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"os/exec"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -25,31 +29,56 @@ func newHalooDB() *HalooDB {
 
 func (hdb *HalooDB) connect() {
 	// Connect to the "haloochat" database.
-	db, err := sql.Open("postgres", "postgresql://maxroach@localhost:26257/haloochat?sslmode=disable")
+	db, err := sql.Open("postgres", "postgresql://root@localhost:26257/haloochat?sslmode=disable")
 	if err != nil {
 		log.Fatal("error connecting to the database: ", err)
 	}
 
 	hdb.connection = db
+	go hdb.start()
+	hdb.migrate()
+	err = hdb.test()
 
-	// Create the "users" table.
-	if _, err := hdb.connection.Exec(
-		"CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), password VARCHAR(255), last_seen TIMESTAMPTZ, profile_picture VARCHAR(255))"); err != nil {
-		log.Fatal(err)
+	if err != nil {
+		log.Printf("error testing the database: %v", err)
+		return
 	}
 
-	// Create the "chatlog" table.
-	if _, err := hdb.connection.Exec("CREATE TABLE IF NOT EXISTS chatlog (id SERIAL PRIMARY KEY, sender integer, message TEXT, timestamp TIMESTAMPTZ)"); err != nil {
-		log.Printf("error creating chatlog table: %v", err)
+	fmt.Println("*** DATABASE TESTED AND WORKING ***")
+}
+
+func (hdb *HalooDB) test() error {
+	var err error
+
+	// Insert test user into the users table.
+	if _, err = hdb.connection.Exec(
+		"INSERT INTO users (name, email, password, last_seen, profile_picture) VALUES ('Testuser', 'test@gmail.com', 'password', '2016-01-25 10:10:10.555555-05:00', 'test.jpg')"); err != nil {
+		log.Printf("error inserting to users: %v", err)
 	}
 
 	if hdb.rowCount("users") == 0 {
-		// Insert test user into the users table.
-		if _, err := hdb.connection.Exec(
-			"INSERT INTO users (name, email, password, last_seen, profile_picture) VALUES ('Riku', 'rikuw', 'salasana', '2016-01-25 10:10:10.555555-05:00', 'test.jpg')"); err != nil {
+		err = errors.New("No test user found in the database")
+	}
+
+	rows, err := hdb.connection.Query("SELECT name, email, password FROM users")
+	if err != nil {
+		log.Printf("error querying test data from users: %v", err)
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var userName, email, password string
+		if err = rows.Scan(&userName, &email, &password); err != nil {
 			log.Fatal(err)
 		}
 	}
+
+	if _, err = hdb.connection.Exec(
+		"DELETE FROM users WHERE name LIKE 'Testuser'"); err != nil {
+		log.Printf("error deleting from users: %v", err)
+	}
+
+	return err
 }
 
 func (hdb *HalooDB) rowCount(table string) int {
@@ -81,5 +110,26 @@ func (hdb *HalooDB) queuePump() {
 				log.Printf("error inserting message to db: %v", err)
 			}
 		}
+	}
+}
+
+func (hdb *HalooDB) start() {
+	cmd := exec.Command("./bin/.\\cockroach", "start", "--insecure", "--host=localhost")
+	log.Printf("Running command and waiting for it to finish...")
+	err := cmd.Start()
+	log.Printf("Command finished with error: %v", err)
+}
+
+func (hdb *HalooDB) migrate() {
+	data, err := ioutil.ReadFile("./database/migration.sql")
+	if err != nil {
+		log.Printf("error reading migration file: %v", err)
+	}
+
+	dataStr := string(data)
+
+	_, err = hdb.connection.Exec(dataStr)
+	if err != nil {
+		log.Printf("error executing the migration: %v", err)
 	}
 }
