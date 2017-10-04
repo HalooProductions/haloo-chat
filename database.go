@@ -115,9 +115,10 @@ func (hdb *HalooDB) queuePump() {
 
 func (hdb *HalooDB) start() {
 	cmd := exec.Command("./bin/.\\cockroach", "start", "--insecure", "--host=localhost")
-	log.Printf("Running command and waiting for it to finish...")
 	err := cmd.Start()
-	log.Printf("Command finished with error: %v", err)
+	if err != nil {
+		log.Printf("Command finished with error: %v", err)
+	}
 }
 
 func (hdb *HalooDB) migrate() {
