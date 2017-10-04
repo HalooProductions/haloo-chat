@@ -38,6 +38,7 @@ func main() {
 
 	dbconn := newHalooDB()
 	dbconn.connect()
+	go dbconn.queuePump()
 
 	rows, err := dbconn.connection.Query("SELECT name, email, password FROM users")
 	if err != nil {
@@ -54,7 +55,7 @@ func main() {
 		fmt.Println(userName)
 	}
 
-	hub := newHub()
+	hub := newHub(dbconn)
 	go hub.run()
 	http.HandleFunc("/", serveHome)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {

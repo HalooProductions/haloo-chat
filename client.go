@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -47,7 +48,15 @@ type Client struct {
 	// Buffered channel of outbound messages.
 	send chan []byte
 
+	// The database connection.
 	dbconn *HalooDB
+}
+
+// Message is the message a client sends.
+type Message struct {
+	Sender    int    `json:"sender"`
+	Message   string `json:"message"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -71,8 +80,17 @@ func (c *Client) readPump() {
 			}
 			break
 		}
+
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+
 		c.hub.broadcast <- message
+
+		var jsonMessage Message
+		if err := json.Unmarshal(message, &jsonMessage); err != nil {
+			log.Printf("error: %v", err)
+		}
+
+		c.dbconn.queue <- jsonMessage
 	}
 }
 
@@ -129,7 +147,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), dbconn: hub.dbconn}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
