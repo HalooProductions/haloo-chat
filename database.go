@@ -47,6 +47,7 @@ func (hdb *HalooDB) connect() {
 	fmt.Println("*** DATABASE TESTED AND WORKING ***")
 }
 
+// Test the database
 func (hdb *HalooDB) test() error {
 	var err error
 
