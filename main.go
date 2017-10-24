@@ -11,6 +11,7 @@ import (
 )
 
 var addr = flag.String("addr", ":8000", "http service address")
+var rooms = []string{"test", "test2", "test3"}
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
@@ -36,6 +37,16 @@ func main() {
 	go hub.run()
 
 	http.HandleFunc("/", serveHome)
+
+	for _, room := range rooms {
+		roomHub := newHub(dbconn)
+		go roomHub.run()
+
+		http.HandleFunc("/"+room, func(w http.ResponseWriter, r *http.Request) {
+			serveWs(roomHub, w, r)
+		})
+	}
+
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(hub, w, r)
 	})
