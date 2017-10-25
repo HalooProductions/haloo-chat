@@ -21,6 +21,12 @@ type HalooDB struct {
 	queue chan Message
 }
 
+// Room is a hub of multiple chat users
+type Room struct {
+	ID   int
+	Name string
+}
+
 func newHalooDB() *HalooDB {
 	return &HalooDB{
 		queue: make(chan Message),
@@ -134,21 +140,56 @@ func (hdb *HalooDB) migrate() {
 }
 
 func (hdb *HalooDB) createDefaultData() {
+	var userID int
+	var roomID int
+
 	if hdb.rowCount("chat_users") == 0 {
 		// Insert default user into users table.
-		if _, err := hdb.connection.Exec(
-			"INSERT INTO chat_users (name, email, password, last_seen, profile_picture) VALUES ('Superadmin', 'admin@haloochat.dev', 'password', '2017-10-25 10:10:10.555555-05:00', 'admin.jpg')"); err != nil {
+		if err := hdb.connection.QueryRow(
+			"INSERT INTO chat_users (name, email, password, last_seen, profile_picture) VALUES ('Superadmin', 'admin@haloochat.dev', 'password', '2017-10-25 10:10:10.555555-05:00', 'admin.jpg') RETURNING id").Scan(&userID); err != nil {
 			log.Printf("error inserting default user into users: %v", err)
 		}
 	}
 
 	if hdb.rowCount("rooms") == 0 {
 		// Insert default room into rooms table.
-		if _, err := hdb.connection.Exec(
-			"INSERT INTO rooms (name) VALUES ('Welcome')"); err != nil {
-			log.Printf("error inserting to rooms: %v", err)
+		if err := hdb.connection.QueryRow("INSERT INTO rooms (name) VALUES ('Welcome') RETURNING id").Scan(&roomID); err != nil {
+			log.Printf("error inserting default room to rooms: %v", err)
+		}
+
+		stmt, err := hdb.connection.Prepare("INSERT INTO room_has_users (room_id, user_id, is_admin) VALUES ($1, $2, $3)")
+
+		if err != nil {
+			log.Printf("error preparing foreign keys for default rooms: %v", err)
+		}
+
+		_, err = stmt.Exec(roomID, userID, true)
+		if err != nil {
+			log.Printf("error creating foreign keys for default rooms: %v", err)
 		}
 	}
+}
+
+func (hdb *HalooDB) getRooms() []Room {
+	var rooms []Room
+
+	rows, err := hdb.connection.Query("SELECT id, name FROM rooms;")
+	if err != nil {
+		log.Printf("error getting rooms from the db: %v", err)
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var room Room
+
+		if err := rows.Scan(&room.ID, &room.Name); err != nil {
+			log.Printf("error reading room data from db: %v", err)
+		}
+
+		rooms = append(rooms, room)
+	}
+
+	return rooms
 }
 
 func (hdb *HalooDB) force() {

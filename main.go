@@ -11,7 +11,6 @@ import (
 )
 
 var addr = flag.String("addr", ":8000", "http service address")
-var rooms = []string{"test", "test2", "test3"}
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
@@ -31,6 +30,9 @@ func main() {
 
 	dbconn := newHalooDB()
 	dbconn.connect()
+
+	rooms := dbconn.getRooms()
+
 	go dbconn.queuePump()
 
 	hub := newHub(dbconn)
@@ -42,7 +44,7 @@ func main() {
 		roomHub := newHub(dbconn)
 		go roomHub.run()
 
-		http.HandleFunc("/"+room, func(w http.ResponseWriter, r *http.Request) {
+		http.HandleFunc("/"+room.Name, func(w http.ResponseWriter, r *http.Request) {
 			serveWs(roomHub, w, r)
 		})
 	}
