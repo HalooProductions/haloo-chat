@@ -21,12 +21,6 @@ type HalooDB struct {
 	queue chan Message
 }
 
-// Room is a hub of multiple chat users
-type Room struct {
-	ID   int
-	Name string
-}
-
 func newHalooDB() *HalooDB {
 	return &HalooDB{
 		queue: make(chan Message),
@@ -43,7 +37,11 @@ func (hdb *HalooDB) connect() {
 	hdb.connection = db
 	go hdb.start()
 	hdb.migrate()
-	hdb.test()
+	err = hdb.test()
+
+	if err == nil {
+		fmt.Println("*** DATABASE TESTED AND WORKING ***")
+	}
 }
 
 // Test the database
@@ -77,8 +75,6 @@ func (hdb *HalooDB) test() error {
 		"DELETE FROM chat_users WHERE name LIKE 'Testuser'"); err != nil {
 		log.Printf("error deleting from users: %v", err)
 	}
-
-	fmt.Println("*** DATABASE TESTED AND WORKING ***")
 
 	return err
 }
@@ -168,28 +164,6 @@ func (hdb *HalooDB) createDefaultData() {
 			log.Printf("error creating foreign keys for default rooms: %v", err)
 		}
 	}
-}
-
-func (hdb *HalooDB) getRooms() []Room {
-	var rooms []Room
-
-	rows, err := hdb.connection.Query("SELECT id, name FROM rooms;")
-	if err != nil {
-		log.Printf("error getting rooms from the db: %v", err)
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var room Room
-
-		if err := rows.Scan(&room.ID, &room.Name); err != nil {
-			log.Printf("error reading room data from db: %v", err)
-		}
-
-		rooms = append(rooms, room)
-	}
-
-	return rooms
 }
 
 func (hdb *HalooDB) force() {

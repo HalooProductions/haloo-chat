@@ -28,3 +28,12 @@ CREATE TABLE IF NOT EXISTS room_has_users
     user_id SERIAL NOT NULL REFERENCES chat_users (id),
     is_admin BOOLEAN DEFAULT false,
     INDEX (room_id, user_id));
+
+/* Migration 1.11.2017 */
+
+CREATE TABLE IF NOT EXISTS user_conversations
+    (user_id SERIAL NOT NULL REFERENCES chat_users (id),
+    receiver_user_id SERIAL NOT NULL REFERENCES chat_users (id),
+    INDEX (user_id, receiver_user_id));
+
+INSERT INTO rooms (name, picture) VALUES ('Welcome!', 'placeholder.jpg');
