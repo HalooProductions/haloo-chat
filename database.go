@@ -112,7 +112,7 @@ func (hdb *HalooDB) queuePump() {
 }
 
 func (hdb *HalooDB) start() {
-	cmd := exec.Command("./bin/.\\cockroach", "start", "--insecure", "--host=localhost")
+	cmd := exec.Command("./bin/.\\cockroach", "start", "--insecure")
 	err := cmd.Start()
 	if err != nil {
 		log.Printf("Command finished with error: %v", err)
@@ -135,6 +135,7 @@ func (hdb *HalooDB) migrate() {
 	defer hdb.createDefaultData()
 }
 
+// Create default data for testing
 func (hdb *HalooDB) createDefaultData() {
 	var userID int
 	var roomID int
@@ -149,7 +150,7 @@ func (hdb *HalooDB) createDefaultData() {
 
 	if hdb.rowCount("rooms") == 0 {
 		// Insert default room into rooms table.
-		if err := hdb.connection.QueryRow("INSERT INTO rooms (name) VALUES ('Welcome') RETURNING id").Scan(&roomID); err != nil {
+		if err := hdb.connection.QueryRow("INSERT INTO rooms (name, picture) VALUES ('Welcome', 'placeholder.jpg') RETURNING id").Scan(&roomID); err != nil {
 			log.Printf("error inserting default room to rooms: %v", err)
 		}
 

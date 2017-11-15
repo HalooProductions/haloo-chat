@@ -35,5 +35,3 @@ CREATE TABLE IF NOT EXISTS user_conversations
     (user_id SERIAL NOT NULL REFERENCES chat_users (id),
     receiver_user_id SERIAL NOT NULL REFERENCES chat_users (id),
     INDEX (user_id, receiver_user_id));
-
-INSERT INTO rooms (name, picture) VALUES ('Welcome!', 'placeholder.jpg');

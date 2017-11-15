@@ -9,6 +9,7 @@ type Room struct {
 	Picture string
 }
 
+// Get ALL rooms
 func getRooms(db *HalooDB) []Room {
 	var rooms []Room
 

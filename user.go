@@ -1,6 +1,8 @@
 package main
 
-import "log"
+import (
+	"log"
+)
 
 // User represents a single chat user
 type User struct {
@@ -10,12 +12,14 @@ type User struct {
 	Password       string
 	LastSeen       string `json:"last_seen"`
 	ProfilePicture string `json:"profile_picture"`
+	DB             *HalooDB
 }
 
+// Find user from the database
 func getUser(db *HalooDB, id int) User {
 	var user User
 
-	rows, err := db.connection.Query("SELECT id, name, email, password, last_seen, profile_picture FROM chat_users WHERE id = ?;", id)
+	rows, err := db.connection.Query("SELECT id, name, email, password, last_seen, profile_picture FROM chat_users WHERE id = $1;", id)
 
 	if err != nil {
 		log.Printf("error getting user from db: %v", err)
@@ -23,22 +27,27 @@ func getUser(db *HalooDB, id int) User {
 
 	defer rows.Close()
 	for rows.Next() {
-		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.LastSeen, &user.ProfilePicture); err != nil {
+		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.LastSeen, &user.ProfilePicture); err != nil {
 			log.Printf("error reading user data from database: %v", err)
 		}
 	}
 
+	user.DB = db
+
 	return user
 }
 
-func (user *User) getConversations(db *HalooDB) []User {
+// Get all conversations for one user
+func (user *User) getConversations() []User {
 	var conversations []User
 
-	rows, err := db.connection.Query("SELECT id, name, email, last_seen, profile_picture FROM chat_users c WHERE c.id IN (SELECT receiver_user_id FROM user_conversations WHERE user_id = ?);", user.ID)
+	rows, err := user.DB.connection.Query("SELECT id, name, email, last_seen, profile_picture FROM chat_users c WHERE c.id IN (SELECT receiver_user_id FROM user_conversations WHERE user_id = $1);", user.ID)
 
 	if err != nil {
 		log.Printf("error getting user conversations from db: %v", err)
 	}
+
+	log.Printf("rows: %v", rows)
 
 	defer rows.Close()
 	for rows.Next() {
@@ -54,13 +63,16 @@ func (user *User) getConversations(db *HalooDB) []User {
 	return conversations
 }
 
-func (user *User) getRooms(db *HalooDB) []Room {
+// Get all rooms for one user
+func (user *User) getRooms() []Room {
 	var rooms []Room
 
-	rows, err := db.connection.Query("SELECT * from rooms r WHERE id IN (SELECT room_id FROM room_has_users rh WHERE rh.user_id = ?);", user.ID)
+	rows, err := user.DB.connection.Query("SELECT * from rooms r WHERE id IN (SELECT room_id FROM room_has_users rh WHERE rh.user_id = $1);", user.ID)
 	if err != nil {
 		log.Printf("error getting user rooms from db: %v", err)
 	}
+
+	log.Printf("room rows: %v", rows)
 
 	defer rows.Close()
 	for rows.Next() {
@@ -74,3 +86,7 @@ func (user *User) getRooms(db *HalooDB) []Room {
 
 	return rooms
 }
+
+/*func (user *User) joinRoom() bool {
+	stmt, err := user.DB.connection.Prepare("INSERT INTO room_has_users (room_id, user_id) VALUES ($1, $2)")
+}*/
