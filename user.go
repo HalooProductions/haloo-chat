@@ -67,7 +67,7 @@ func (user *User) getConversations() []User {
 func (user *User) getRooms() []Room {
 	var rooms []Room
 
-	rows, err := user.DB.connection.Query("SELECT * from rooms r WHERE id IN (SELECT room_id FROM room_has_users rh WHERE rh.user_id = $1);", user.ID)
+	rows, err := user.DB.connection.Query("SELECT id, name, picture FROM rooms r WHERE id IN (SELECT room_id FROM room_has_users rh WHERE rh.user_id = $1);", user.ID)
 	if err != nil {
 		log.Printf("error getting user rooms from db: %v", err)
 	}

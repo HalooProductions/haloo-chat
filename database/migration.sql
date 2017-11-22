@@ -8,20 +8,19 @@ CREATE TABLE IF NOT EXISTS chat_users
     password VARCHAR(255), 
     last_seen TIMESTAMPTZ, 
     profile_picture VARCHAR(255));
-    
-CREATE TABLE IF NOT EXISTS chatlog 
-    (id SERIAL PRIMARY KEY, 
-    sender SERIAL, 
-    receiver SERIAL, 
-    message TEXT, 
-    timestamp TIMESTAMPTZ);
-
-/* Migration 25.10.2017 */
 
 CREATE TABLE IF NOT EXISTS rooms
     (id SERIAL PRIMARY KEY,
     name VARCHAR(255),
     picture VARCHAR(255));
+    
+CREATE TABLE IF NOT EXISTS chatlog 
+    (id SERIAL PRIMARY KEY, 
+    sender SERIAL REFERENCES chat_users (id), 
+    receiver SERIAL REFERENCES chat_users (id), 
+    message TEXT, 
+    room_id SERIAL REFERENCES rooms (id),
+    timestamp TIMESTAMPTZ);
 
 CREATE TABLE IF NOT EXISTS room_has_users
     (room_id SERIAL NOT NULL REFERENCES rooms (id),

@@ -124,6 +124,67 @@ func main() {
 		w.Write(conversationJSON)
 	})
 
+	http.HandleFunc("/chatlog", func(w http.ResponseWriter, r *http.Request) {
+		type ChatlogJSON struct {
+			Sender   string `json:"sender"`
+			Receiver string `json:"receiver"`
+			Message  string `json:"message"`
+			RoomID   int    `json:"room_id"`
+		}
+
+		var chatData []ChatlogJSON
+
+		w.Header().Set("Content-Type", "application/json")
+
+		log.Println(r.URL)
+
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", 405)
+			return
+		}
+
+		roomID, ok := r.URL.Query()["room_id"]
+		if !ok || len(roomID) < 1 {
+			userID, ok := r.URL.Query()["user_id"]
+			if !ok || len(userID) < 1 {
+				log.Printf("no user_id provided for getting conversations & rooms")
+				// TODO: Return JSON stating the error.
+			}
+
+			receiverID, ok := r.URL.Query()["receiver_id"]
+			if !ok || len(receiverID) < 1 {
+				log.Printf("no receiver_id provided for getting conversations & rooms")
+				// TODO: Return JSON stating the error.
+			}
+		} else {
+			rows, err := dbconn.connection.Query("SELECT sender, receiver, message, room_id FROM chatlog WHERE room_id = $1", roomID[0])
+			if err != nil {
+				log.Printf("error reading chatlog for room: %v", err)
+			}
+
+			log.Printf("rows: %v", rows)
+
+			defer rows.Close()
+			for rows.Next() {
+				var cData ChatlogJSON
+				if err := rows.Scan(&cData.Sender, &cData.Receiver, &cData.Message, &cData.RoomID); err != nil {
+					log.Printf("error reading chatlog data: %v", err)
+				}
+
+				chatData = append(chatData, cData)
+			}
+		}
+
+		log.Printf("chat data: %v", chatData)
+
+		chatDataJSON, err := json.Marshal(chatData)
+		if err != nil {
+			log.Printf("error converting json: %v", err)
+		}
+
+		w.Write(chatDataJSON)
+	})
+
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

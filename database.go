@@ -138,12 +138,18 @@ func (hdb *HalooDB) migrate() {
 // Create default data for testing
 func (hdb *HalooDB) createDefaultData() {
 	var userID int
+	var userTwoID int
 	var roomID int
 
 	if hdb.rowCount("chat_users") == 0 {
 		// Insert default user into users table.
 		if err := hdb.connection.QueryRow(
 			"INSERT INTO chat_users (name, email, password, last_seen, profile_picture) VALUES ('Superadmin', 'admin@haloochat.dev', 'password', '2017-10-25 10:10:10.555555-05:00', 'admin.jpg') RETURNING id").Scan(&userID); err != nil {
+			log.Printf("error inserting default user into users: %v", err)
+		}
+
+		if err := hdb.connection.QueryRow(
+			"INSERT INTO chat_users (name, email, password, last_seen, profile_picture) VALUES ('Superadmin2', 'admin2@haloochat.dev', 'password2', '2017-10-25 10:10:10.555555-05:00', 'admin2.jpg') RETURNING id").Scan(&userTwoID); err != nil {
 			log.Printf("error inserting default user into users: %v", err)
 		}
 	}
@@ -164,6 +170,17 @@ func (hdb *HalooDB) createDefaultData() {
 		if err != nil {
 			log.Printf("error creating foreign keys for default rooms: %v", err)
 		}
+	}
+
+	stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, $4, $5)")
+
+	if err != nil {
+		log.Printf("error preparing chatlog data: %v", err)
+	}
+
+	_, err = stmt.Exec(userID, userTwoID, "Testataan kannan kautta tulevia viestejä", roomID, "2017-10-25 10:10:10.555555-05:00")
+	if err != nil {
+		log.Printf("error inserting chatlog data: %v", err)
 	}
 }
 
