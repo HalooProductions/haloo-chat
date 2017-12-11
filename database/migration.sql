@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS chatlog
     receiver SERIAL REFERENCES chat_users (id), 
     message TEXT, 
     room_id SERIAL REFERENCES rooms (id),
-    timestamp TIMESTAMPTZ);
+    timestamp INT);
 
 CREATE TABLE IF NOT EXISTS room_has_users
     (room_id SERIAL NOT NULL REFERENCES rooms (id),

@@ -126,10 +126,12 @@ func main() {
 
 	http.HandleFunc("/chatlog", func(w http.ResponseWriter, r *http.Request) {
 		type ChatlogJSON struct {
-			Sender   string `json:"sender"`
-			Receiver string `json:"receiver"`
-			Message  string `json:"message"`
-			RoomID   int    `json:"room_id"`
+			Sender    string `json:"sender"`
+			Receiver  string `json:"receiver"`
+			Message   string `json:"message"`
+			RoomID    int    `json:"room_id"`
+			Timestamp int64  `json:"timestamp"`
+			Name      string `json:"name"`
 		}
 
 		var chatData []ChatlogJSON
@@ -156,8 +158,23 @@ func main() {
 				log.Printf("no receiver_id provided for getting conversations & rooms")
 				// TODO: Return JSON stating the error.
 			}
+
+			rows, err := dbconn.connection.Query("SELECT c.sender, c.receiver, c.message, c.timestamp, cu.name FROM chatlog c JOIN chat_users cu ON cu.id = c.sender WHERE ((sender = $1) AND (receiver = $2)) AND (room_id IS NULL);", userID[0], receiverID[0])
+			if err != nil {
+				log.Printf("error reading chatlog for user: %v", err)
+			}
+
+			defer rows.Close()
+			for rows.Next() {
+				var cData ChatlogJSON
+				if err := rows.Scan(&cData.Sender, &cData.Receiver, &cData.Message, &cData.Timestamp, &cData.Name); err != nil {
+					log.Printf("error reading chatlog data %v", err)
+				}
+
+				chatData = append(chatData, cData)
+			}
 		} else {
-			rows, err := dbconn.connection.Query("SELECT sender, receiver, message, room_id FROM chatlog WHERE room_id = $1", roomID[0])
+			rows, err := dbconn.connection.Query("SELECT sender, receiver, message, room_id, timestamp FROM chatlog WHERE room_id = $1", roomID[0])
 			if err != nil {
 				log.Printf("error reading chatlog for room: %v", err)
 			}
@@ -167,7 +184,7 @@ func main() {
 			defer rows.Close()
 			for rows.Next() {
 				var cData ChatlogJSON
-				if err := rows.Scan(&cData.Sender, &cData.Receiver, &cData.Message, &cData.RoomID); err != nil {
+				if err := rows.Scan(&cData.Sender, &cData.Receiver, &cData.Message, &cData.RoomID, &cData.Timestamp); err != nil {
 					log.Printf("error reading chatlog data: %v", err)
 				}
 

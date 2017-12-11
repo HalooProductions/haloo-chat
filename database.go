@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os/exec"
-	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -95,15 +94,13 @@ func (hdb *HalooDB) queuePump() {
 	for {
 		select {
 		case message := <-hdb.queue:
-			stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, message, timestamp) VALUES ($1, $2, $3)")
+			stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, timestamp) VALUES ($1, $2, $3, $4)")
 
 			if err != nil {
 				log.Printf("error preparing message to db: %v", err)
 			}
 
-			timestamp := time.Unix(message.Timestamp, 0)
-
-			_, err = stmt.Exec(message.Sender, message.Message, timestamp.Format(time.RFC3339))
+			_, err = stmt.Exec(message.Sender, message.Receiver, message.Message, message.Timestamp)
 			if err != nil {
 				log.Printf("error inserting message to db: %v", err)
 			}
@@ -170,6 +167,17 @@ func (hdb *HalooDB) createDefaultData() {
 		if err != nil {
 			log.Printf("error creating foreign keys for default rooms: %v", err)
 		}
+
+		stmt, err = hdb.connection.Prepare("INSERT INTO user_conversations (user_id, receiver_user_id) VALUES ($1, $2)")
+
+		if err != nil {
+			log.Printf("error preparing default data to user conversations: %v", err)
+		}
+
+		_, err = stmt.Exec(userID, userTwoID)
+		if err != nil {
+			log.Printf("error inserting default data to user conversations: %v", err)
+		}
 	}
 
 	stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, $4, $5)")
@@ -178,7 +186,17 @@ func (hdb *HalooDB) createDefaultData() {
 		log.Printf("error preparing chatlog data: %v", err)
 	}
 
-	_, err = stmt.Exec(userID, userTwoID, "Testataan kannan kautta tulevia viestejä", roomID, "2017-10-25 10:10:10.555555-05:00")
+	_, err = stmt.Exec(userID, userTwoID, "Testataan kannan kautta tulevia viestejä", roomID, "1513012789379")
+	if err != nil {
+		log.Printf("error inserting chatlog data: %v", err)
+	}
+
+	stmt, err = hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, null, $4)")
+	if err != nil {
+		log.Printf("error preparing chatlog data: %v", err)
+	}
+
+	_, err = stmt.Exec(userID, userTwoID, "Testataan kannan kautta tulevia priva viestejä", "1513012789379")
 	if err != nil {
 		log.Printf("error inserting chatlog data: %v", err)
 	}
