@@ -8,6 +8,7 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
+	"strconv"
 
 	_ "github.com/lib/pq"
 )
@@ -103,14 +104,24 @@ func (hdb *HalooDB) queuePump() {
 	for {
 		select {
 		case message := <-hdb.queue:
-			if message.RoomID == 0 {
+			if message.RoomID == "0" {
 				stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, null, $4)")
 
 				if err != nil {
 					log.Printf("error preparing message to db: %v", err)
 				}
 
-				_, err = stmt.Exec(message.Sender, message.Receiver, message.Message, message.Timestamp)
+				senderID, err := strconv.Atoi(message.Sender)
+				if err != nil {
+					log.Printf("error converting senderId to int: %v", err)
+				}
+
+				receiverID, err := strconv.Atoi(message.Receiver)
+				if err != nil {
+					log.Printf("error converting receiverId to int: %v", err)
+				}
+
+				_, err = stmt.Exec(senderID, receiverID, message.Message, message.Timestamp)
 				if err != nil {
 					log.Printf("error inserting message to db: %v", err)
 				}
@@ -121,7 +132,22 @@ func (hdb *HalooDB) queuePump() {
 					log.Printf("error preparing message to db: %v", err)
 				}
 
-				_, err = stmt.Exec(message.Sender, message.Receiver, message.Message, message.RoomID, message.Timestamp)
+				senderID, err := strconv.Atoi(message.Sender)
+				if err != nil {
+					log.Printf("error converting senderId to int: %v", err)
+				}
+
+				receiverID, err := strconv.Atoi(message.Receiver)
+				if err != nil {
+					log.Printf("error converting receiverId to int: %v", err)
+				}
+
+				roomID, err := strconv.Atoi(message.RoomID)
+				if err != nil {
+					log.Printf("error converting roomId to int: %v", err)
+				}
+
+				_, err = stmt.Exec(senderID, receiverID, message.Message, roomID, message.Timestamp)
 				if err != nil {
 					log.Printf("error inserting message to db: %v", err)
 				}

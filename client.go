@@ -54,10 +54,10 @@ type Client struct {
 
 // Message is the message a client sends.
 type Message struct {
-	Sender    int    `json:"sender"`
-	Receiver  int    `json:"receiver"`
+	Sender    string `json:"sender"`
+	Receiver  string `json:"receiver"`
 	Message   string `json:"message"`
-	RoomID    int    `json:"room_id,omitempty"`
+	RoomID    string `json:"room_id,omitempty"`
 	Timestamp int64  `json:"timestamp"`
 }
 
