@@ -176,6 +176,21 @@ func main() {
 
 				chatData = append(chatData, cData)
 			}
+
+			rows, err = dbconn.connection.Query("SELECT c.sender, c.receiver, c.message, c.timestamp, cu.name FROM chatlog c JOIN chat_users cu ON cu.id = c.receiver WHERE ((sender = $1) AND (receiver = $2)) AND (room_id IS NULL);", userID[0], receiverID[0])
+			if err != nil {
+				log.Printf("error reading chatlog for user: %v", err)
+			}
+
+			defer rows.Close()
+			for rows.Next() {
+				var cData ChatlogJSON
+				if err := rows.Scan(&cData.Receiver, &cData.Sender, &cData.Message, &cData.Timestamp, &cData.Name); err != nil {
+					log.Printf("error reading chatlog data %v", err)
+				}
+
+				chatData = append(chatData, cData)
+			}
 		} else {
 			rows, err := dbconn.connection.Query("SELECT sender, receiver, message, room_id, timestamp FROM chatlog WHERE room_id = $1", roomID[0])
 			if err != nil {
