@@ -6,7 +6,7 @@ import (
 
 // User represents a single chat user
 type User struct {
-	ID             int    `json:"ID"`
+	ID             int    `json:"ID,string"`
 	Name           string `json:"Name"`
 	Email          string `json:"Email"`
 	Password       string

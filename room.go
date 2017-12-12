@@ -4,7 +4,7 @@ import "log"
 
 // Room is a hub of multiple chat users
 type Room struct {
-	ID      int    `json:"Room_ID"`
+	ID      int    `json:"Room_ID,string"`
 	Name    string `json:"Name"`
 	Picture string `json:"Picture"`
 }
