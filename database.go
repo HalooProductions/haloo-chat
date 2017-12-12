@@ -230,9 +230,19 @@ func (hdb *HalooDB) createDefaultData() {
 		log.Printf("error inserting chatlog data: %v", err)
 	}
 
+	stmt, err = hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, null, $4)")
+	if err != nil {
+		log.Printf("error preparing chatlog data: %v", err)
+	}
+
 	_, err = stmt.Exec(userTwoID, userID, "Mennäänkö kauppaan", "1513012789380")
 	if err != nil {
 		log.Printf("error inserting chatlog data: %v", err)
+	}
+
+	stmt, err = hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, null, $4)")
+	if err != nil {
+		log.Printf("error preparing chatlog data: %v", err)
 	}
 
 	_, err = stmt.Exec(userTwoID, userID, "Pakko saaha jotai juotavaa", "1513012789395")
