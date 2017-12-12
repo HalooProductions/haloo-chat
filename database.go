@@ -229,6 +229,16 @@ func (hdb *HalooDB) createDefaultData() {
 	if err != nil {
 		log.Printf("error inserting chatlog data: %v", err)
 	}
+
+	_, err = stmt.Exec(userTwoID, userID, "Mennäänkö kauppaan", "1513012789380")
+	if err != nil {
+		log.Printf("error inserting chatlog data: %v", err)
+	}
+
+	_, err = stmt.Exec(userTwoID, userID, "Pakko saaha jotai juotavaa", "1513012789395")
+	if err != nil {
+		log.Printf("error inserting chatlog data: %v", err)
+	}
 }
 
 func (hdb *HalooDB) force() {
