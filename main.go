@@ -33,9 +33,12 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	var migrate bool
+	flag.BoolVar(&migrate, "migrate", false, "Whether or not you want to run the database migration.")
+
 	flag.Parse()
 
-	dbconn := newHalooDB()
+	dbconn := newHalooDB(migrate)
 	dbconn.connect()
 
 	rooms := getRooms(dbconn)

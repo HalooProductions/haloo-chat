@@ -19,11 +19,15 @@ type HalooDB struct {
 
 	// The database insertion queue channel
 	queue chan Message
+
+	// Whether or not to run the initial migration
+	runMigration bool
 }
 
-func newHalooDB() *HalooDB {
+func newHalooDB(migrate bool) *HalooDB {
 	return &HalooDB{
-		queue: make(chan Message),
+		queue:        make(chan Message),
+		runMigration: migrate,
 	}
 }
 
@@ -36,12 +40,16 @@ func (hdb *HalooDB) connect() {
 
 	hdb.connection = db
 	go hdb.start()
-	hdb.migrate()
-	err = hdb.test()
+	if hdb.runMigration {
+		hdb.migrate()
+		err = hdb.test()
 
-	if err == nil {
-		fmt.Println("*** DATABASE TESTED AND WORKING ***")
+		if err == nil {
+			fmt.Println("*** DATABASE TESTED AND WORKING ***")
+		}
 	}
+
+	fmt.Println("*** HALOO CHAT RUNNING! :) ***")
 }
 
 // Test the database
@@ -95,13 +103,13 @@ func (hdb *HalooDB) queuePump() {
 	for {
 		select {
 		case message := <-hdb.queue:
-			stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, timestamp) VALUES ($1, $2, $3, $4)")
+			stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, $4, $5)")
 
 			if err != nil {
 				log.Printf("error preparing message to db: %v", err)
 			}
 
-			_, err = stmt.Exec(message.Sender, message.Receiver, message.Message, message.Timestamp)
+			_, err = stmt.Exec(message.Sender, message.Receiver, message.Message, message.RoomID, message.Timestamp)
 			if err != nil {
 				log.Printf("error inserting message to db: %v", err)
 			}

@@ -57,6 +57,7 @@ type Message struct {
 	Sender    int    `json:"sender"`
 	Receiver  int    `json:"receiver"`
 	Message   string `json:"message"`
+	RoomID    int    `json:"room_id"`
 	Timestamp int64  `json:"timestamp"`
 }
 

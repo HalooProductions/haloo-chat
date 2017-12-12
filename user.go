@@ -6,13 +6,13 @@ import (
 
 // User represents a single chat user
 type User struct {
-	ID             int    `json:"ID,string"`
-	Name           string `json:"Name"`
-	Email          string `json:"Email"`
-	Password       string
-	LastSeen       string `json:"Last_seen"`
-	ProfilePicture string `json:"Picture"`
-	DB             *HalooDB
+	ID             int      `json:"ID,string"`
+	Name           string   `json:"Name"`
+	Email          string   `json:"Email"`
+	Password       string   `json:"-"`
+	LastSeen       string   `json:"Last_seen"`
+	ProfilePicture string   `json:"Picture"`
+	DB             *HalooDB `json:"-"`
 }
 
 // Find user from the database
