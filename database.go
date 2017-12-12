@@ -103,15 +103,28 @@ func (hdb *HalooDB) queuePump() {
 	for {
 		select {
 		case message := <-hdb.queue:
-			stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, $4, $5)")
+			if message.RoomID == 0 {
+				stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, null, $5)")
 
-			if err != nil {
-				log.Printf("error preparing message to db: %v", err)
-			}
+				if err != nil {
+					log.Printf("error preparing message to db: %v", err)
+				}
 
-			_, err = stmt.Exec(message.Sender, message.Receiver, message.Message, message.RoomID, message.Timestamp)
-			if err != nil {
-				log.Printf("error inserting message to db: %v", err)
+				_, err = stmt.Exec(message.Sender, message.Receiver, message.Message, message.Timestamp)
+				if err != nil {
+					log.Printf("error inserting message to db: %v", err)
+				}
+			} else {
+				stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, $4, $5)")
+
+				if err != nil {
+					log.Printf("error preparing message to db: %v", err)
+				}
+
+				_, err = stmt.Exec(message.Sender, message.Receiver, message.Message, message.RoomID, message.Timestamp)
+				if err != nil {
+					log.Printf("error inserting message to db: %v", err)
+				}
 			}
 		}
 	}
