@@ -104,7 +104,7 @@ func (hdb *HalooDB) queuePump() {
 		select {
 		case message := <-hdb.queue:
 			if message.RoomID == 0 {
-				stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, null, $5)")
+				stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, null, $4)")
 
 				if err != nil {
 					log.Printf("error preparing message to db: %v", err)
