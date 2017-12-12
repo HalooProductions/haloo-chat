@@ -60,6 +60,25 @@ func (user *User) getConversations() []User {
 		conversations = append(conversations, conversation)
 	}
 
+	rows, err = user.DB.connection.Query("SELECT id, name, email, last_seen, profile_picture FROM chat_users AS c WHERE c.id IN (SELECT user_id FROM user_conversations WHERE receiver_user_id = $1);", user.ID)
+
+	if err != nil {
+		log.Printf("error getting user conversations from db: %v", err)
+	}
+
+	log.Printf("rows: %v", rows)
+
+	defer rows.Close()
+	for rows.Next() {
+		var conversation User
+
+		if err := rows.Scan(&conversation.ID, &conversation.Name, &conversation.Email, &conversation.LastSeen, &conversation.ProfilePicture); err != nil {
+			log.Printf("error reading conversation from db: %v", err)
+		}
+
+		conversations = append(conversations, conversation)
+	}
+
 	return conversations
 }
 

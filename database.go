@@ -104,7 +104,7 @@ func (hdb *HalooDB) queuePump() {
 	for {
 		select {
 		case message := <-hdb.queue:
-			if message.RoomID == "0" {
+			if message.RoomID == "" {
 				stmt, err := hdb.connection.Prepare("INSERT INTO chatlog (sender, receiver, message, room_id, timestamp) VALUES ($1, $2, $3, null, $4)")
 
 				if err != nil {
