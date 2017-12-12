@@ -159,7 +159,7 @@ func main() {
 				// TODO: Return JSON stating the error.
 			}
 
-			rows, err := dbconn.connection.Query("SELECT c.sender, c.receiver, c.message, c.timestamp, cu.name FROM chatlog c JOIN chat_users cu ON cu.id = c.sender WHERE ((sender = $1) AND (receiver = $2)) AND (room_id IS NULL);", userID[0], receiverID[0])
+			rows, err := dbconn.connection.Query("SELECT c.sender, c.receiver, c.message, c.timestamp, cu.name FROM chatlog c JOIN chat_users cu ON cu.id = c.receiver WHERE ((sender = $1) AND (receiver = $2)) AND (room_id IS NULL);", userID[0], receiverID[0])
 			if err != nil {
 				log.Printf("error reading chatlog for user: %v", err)
 			}

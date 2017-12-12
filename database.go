@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os/exec"
+	"runtime"
 
 	_ "github.com/lib/pq"
 )
@@ -109,8 +110,15 @@ func (hdb *HalooDB) queuePump() {
 }
 
 func (hdb *HalooDB) start() {
-	cmd := exec.Command("./bin/.\\cockroach", "start", "--insecure")
-	err := cmd.Start()
+	var err error
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("./bin/.\\cockroach", "start", "--insecure")
+		err = cmd.Start()
+	} else if runtime.GOOS == "darwin" || runtime.GOOS == "linux" {
+		cmd := exec.Command("./bin/cockroach", "start", "--insecure")
+		err = cmd.Start()
+	}
+
 	if err != nil {
 		log.Printf("Command finished with error: %v", err)
 	}
